@@ -6,9 +6,7 @@ import scala.collection.immutable.HashMap
 import scala.collection.immutable.HashSet
 
 def tokenize(filePath: String): Queue[Token] =
-  val lines = fromFile(filePath).getLines
-  val chunks = dissolve(lines)
-  val tokens = identify(chunks)
+  val tokens = identify(dissolve(fromFile(filePath).getLines))
   for (token <- tokens) {
     if (token.data.isDefined) {
       println("Type: %s, data: %s".format(token.t.toString(), token.data))
@@ -36,7 +34,7 @@ val tokenMap = HashMap[String, TokenType](
   "const" -> TokenType.CONST,
 )
 
-val oneCharTokenSet = HashSet[Char](
+val oneCharTokenSet = Vector[Char](
   '(', ')', '{', '}', ','
 )
 
