@@ -42,6 +42,7 @@ val oneCharTokenSet = HashSet[Char](
 
 def dissolve(lines: Iterator[String]): Queue[String] =
   var chunks = Queue[String]()
+  var inString = false
   for (line <- lines)
     var chunk = String()
     for (c <- line)
@@ -50,7 +51,10 @@ def dissolve(lines: Iterator[String]): Queue[String] =
           chunks.addOne(chunk)
           chunk = String()
         chunks.addOne(c.toString())
-      else if (c == ' ')
+      else if (c == '"')
+        inString = !inString
+        chunk += c
+      else if (c == ' ' && !inString)
         if (!chunk.isEmpty())
           chunks.addOne(chunk)
           chunk = String()
@@ -60,17 +64,17 @@ def dissolve(lines: Iterator[String]): Queue[String] =
   return chunks
 
 def identify(chunks: Queue[String]): Queue[Token] =
-  return chunks.map(chunk => {
+  return chunks.map(chunk =>
     chunk match
-      case chunk if tokenMap.contains(chunk) =>
-        Token(tokenMap.get(chunk).get)
+      case builtin if tokenMap.contains(chunk) =>
+        Token(tokenMap.get(builtin).get)
       case number if chunk forall Character.isDigit =>
-        Token(TokenType.NUMBER, Option(chunk.toInt))
+        Token(TokenType.NUMBER, Option(number.toInt))
       case string if chunk.length() >= 2 && chunk(0) == '"' && chunk.last == '"' => 
-        Token(TokenType.STRING, Option(chunk.slice(1, chunk.length()-1)))
+        Token(TokenType.STRING, Option(string.slice(1, string.length()-1)))
       case _ =>
         Token(TokenType.IDENTIFIER, Option(chunk))
-  })
+  )
 
 enum TokenType {
   case
