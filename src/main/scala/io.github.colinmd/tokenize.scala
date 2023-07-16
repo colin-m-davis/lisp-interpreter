@@ -3,6 +3,7 @@ package io.github.colinmd
 import scala.io.Source.fromFile
 import scala.collection.mutable.Queue
 import scala.collection.immutable.HashMap
+import scala.collection.immutable.HashSet
 
 def tokenize(filePath: String): Queue[Token] =
   val lines = fromFile(filePath).getLines
@@ -35,12 +36,16 @@ val tokenMap = HashMap[String, TokenType](
   "const" -> TokenType.CONST,
 )
 
+val oneCharTokenSet = HashSet[Char](
+  '(', ')', '{', '}', ','
+)
+
 def dissolve(lines: Iterator[String]): Queue[String] =
   var chunks = Queue[String]()
   for (line <- lines)
     var chunk = String()
     for (c <- line)
-      if (c == '(' || c == ')')
+      if (oneCharTokenSet.contains(c))
         if (!chunk.isEmpty())
           chunks.addOne(chunk)
           chunk = String()
@@ -51,11 +56,11 @@ def dissolve(lines: Iterator[String]): Queue[String] =
           chunk = String()
       else
         chunk += c
+    if !chunk.isEmpty() then chunks.addOne(chunk)
   return chunks
 
 def identify(chunks: Queue[String]): Queue[Token] =
   return chunks.map(chunk => {
-    println(chunk)
     chunk match
       case chunk if tokenMap.contains(chunk) =>
         Token(tokenMap.get(chunk).get)
