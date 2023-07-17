@@ -71,9 +71,9 @@ def getLiteral(chunk: String): Token =
       if chunk.size <= 2 then throw new NumberFormatException
       val base =
         chunk.slice(0, 2) match
-          case "0x" => 16
-          case "0d" => 10
           case "0b" => 2
+          case "0d" => 10
+          case "0x" => 16
           case _ => throw new NumberFormatException
       Token(TokenType.NUMBER, Option(Integer.parseInt(chunk.takeRight(chunk.size - 2), base)))
   catch NumberFormatException =>

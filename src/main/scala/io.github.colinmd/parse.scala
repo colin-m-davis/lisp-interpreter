@@ -5,34 +5,39 @@ import scala.collection.mutable.Queue
 import scala.collection.immutable.HashSet
 
 sealed trait Expr;
-case class Literal(data: String | Int) extends Expr
+case class Value(data: Int | List[Value]) extends Expr
+case class Handle(name: String) extends Expr
 case class FnCall(fn: String, args: List[Expr]) extends Expr
 case class FnDef(fn: String, params: List[String]) extends Expr
 
 case class Environment(
-  functions: HashMap[String, (Tree, List[String])] = new HashMap[String, (Tree, List[String])](
-
-  ),
-  numbers: HashMap[String, Int] = new HashMap[String, Int]
+  functions: HashMap[String, (Tree, List[String])] = new HashMap[String, (Tree, List[String])],
+  handles: HashMap[String, Value] = new HashMap[String, Value]
 )
+
+extension (v: Value)
+  def getInt = v match
+    case Value(data: Int) => data
+    case _ => throw new IllegalArgumentException
 
 val builtInFns = List(
   "add", "+",
   "sub", "-",
   "div", "/",
   "mul", "*",
-  "mod", "%"
+  "mod", "%",
+  "fn"
 )
 
-def evalBuiltInFn(fnName: String, args: List[Int]): Int =
-  println("evalBuiltInFn")
+def evalBuiltInFn(fnName: String, args: List[Value]): Value =
   fnName match
-    case "add" | "+" => args.sum
-    case "sub" | "-" => args.reduce((accum, x) => accum - x)
-    case "mul" | "*" => args.reduce((accum, x) => accum * x)
-    case "div" | "/" => args.reduce((accum, x) => accum / x)
-    case "mod" | "%" => args.reduce((accum, x) => accum % x)
-    case _ => throw new Exception("Nahhhh!")
+    case "add" | "+" => Value(args.map(getInt).reduce((accum: Int, x: Int) => accum + x))
+    case "sub" | "-" => Value(args.map(getInt).reduce((accum: Int, x: Int) => accum - x))
+    case "mul" | "*" => Value(args.map(getInt).reduce((accum: Int, x: Int) => accum * x))
+    case "div" | "/" => Value(args.map(getInt).reduce((accum: Int, x: Int) => accum / x))
+    case "mod" | "%" => Value(args.map(getInt).reduce((accum: Int, x: Int) => accum % x))
+    case "group" => Value(args)
+    case _ => throw new IllegalArgumentException("Nahhhh!")
 
 def eval(tree: Tree, env: Environment): Option[Expr] =
   // this function is too long
@@ -40,34 +45,36 @@ def eval(tree: Tree, env: Environment): Option[Expr] =
     case Node(children) =>
       // TODO: add fn def and extract fn def/call to other functions
       val head = children.dequeue
-      println("Evaluating node with children size %s".formatted(children.size + 1))
       val args = children.toList.map(childTree =>
-          eval(childTree, env).get match
-            case Literal(data: Int) =>
-              data
-            case x =>
-              println(x)
-              throw new Exception("Shit!")
+        eval(childTree, env).get match
+          case v: Value => v
+          case x => throw new Exception("Crap!")
       )
       head match
         case LeafNode(Token(_, Some(fnName: String))) =>
-          if builtInFns.contains(fnName) then Some(Literal(evalBuiltInFn(fnName, args)))
-          else None
-        case LeafNode(Token(_, Some(glorbular: Int))) => throw new Exception("caught a glorbular: %s".formatted(glorbular))
-        case Node(children) =>
-          for (child <- children)
-            println(child)
-          throw new Exception("got NODE with children size %d".formatted(children.size))
-        case _ => throw new Exception("bad fn data")
-    case LeafNode(token) =>
-      Some(Literal(token.data.get))
+          if builtInFns.contains(fnName) then
+            Some(evalBuiltInFn(fnName, args))
+          else if env.functions.contains(fnName) then
+            val (body, params) = env.functions.get(fnName).get
+            val innerEnv = env.copy(handles = env.handles ++ params.zip(args))
+            eval(body, innerEnv)
+          else
+            None
+        case _ => throw new Exception("Malformed function call")
+    case LeafNode(Token(_, Some(name: String))) =>
+      Some(Handle(name))
+    case LeafNode(Token(_, Some(data: Int))) =>
+      Some(Value(data))
+    case x =>
+      println(x)
+      None
 
-def parse(tokens: Queue[Token]): Int = 
+def parse(tokens: Queue[Token]): Value = 
   eval(treeify(tokens), new Environment) match
-    case Some(Literal(data: Int)) => data
-    case _ => 0
+    case Some(v: Value) => v
+    case _ => Value(-1)
 
-def isLiteral(top: TokenType) =
+def isValue(top: TokenType) =
   top match
     case TokenType.IDENTIFIER | TokenType.NUMBER => true
     case _ => false
