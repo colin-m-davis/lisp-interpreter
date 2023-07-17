@@ -22,6 +22,7 @@ val tokenMap = HashMap[String, TokenType](
   "{" -> TokenType.LEFT_BRACE,
   "}" -> TokenType.RIGHT_BRACE,
   "," -> TokenType.COMMA,
+  ";" -> TokenType.EOL,
   "if" -> TokenType.IF,
   "else" -> TokenType.ELSE,
   "fn" -> TokenType.FN,
@@ -31,11 +32,10 @@ val tokenMap = HashMap[String, TokenType](
   "or" -> TokenType.OR,
   "and" -> TokenType.AND,
   "let" -> TokenType.LET,
-  "const" -> TokenType.CONST,
 )
 
 val oneCharTokenSet = Vector[Char](
-  '(', ')', '{', '}', ','
+  '(', ')', '{', '}', ',', ';'
 )
 
 def dissolve(lines: Iterator[String]): Queue[String] =
@@ -66,12 +66,10 @@ def identify(chunks: Queue[String]): Queue[Token] =
     chunk match
       case builtin if tokenMap.contains(chunk) =>
         Token(tokenMap.get(builtin).get)
-      case number if chunk forall Character.isDigit =>
-        Token(TokenType.NUMBER, Option(number.toInt))
-      case string if chunk.length() >= 2 && chunk(0) == '"' && chunk.last == '"' => 
-        Token(TokenType.STRING, Option(string.slice(1, string.length()-1)))
-      case _ =>
-        Token(TokenType.IDENTIFIER, Option(chunk))
+      case identifier if chunk forall Character.isAlphabetic =>
+        Token(TokenType.NUMBER, Option(identifier))
+      case hexString =>
+        Token(TokenType.IDENTIFIER, Option(Integer.parseInt(hexString, 16)))
   )
 
 enum TokenType {
