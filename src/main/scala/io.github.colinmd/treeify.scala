@@ -10,19 +10,23 @@ case class LeafNode(token: Token) extends Tree
 
 // replace parens with tree structure
 def treeify(tokensQueue: Queue[Token]): Tree =
-  var stack = new Stack[Tree]
+  var stack = new Stack[Node]
   stack.addOne(Node())
+  var depth = 0
   for (token <- tokensQueue)
     token.t match
       case TokenType.LEFT_PAREN =>
-        stack.addOne(Node())
+        depth += 1
+        stack.push(Node())
       case TokenType.RIGHT_PAREN =>
-        val top = stack.pop()
-        stack.top match
-          case Node(children) => children.addOne(top)
-          case _ =>
+        depth -= 1
+        val oldTop = stack.pop
+        stack.top.children.enqueue(oldTop)
       case x =>
-        stack.top match
-          case Node(children) => children.addOne(LeafNode(token))
-          case _ =>
-  return stack.top
+        assert(stack.size == depth + 1)
+        1 to 2 * depth foreach { _ =>
+          print(' ')
+        }
+        println("Item: %s, Stack Top Length: %s".formatted(x, stack.top.children.size))
+        stack.top.children.enqueue(LeafNode(token))
+  stack.top

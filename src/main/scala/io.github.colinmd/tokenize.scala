@@ -7,13 +7,8 @@ import scala.collection.immutable.HashSet
 
 def tokenize(filePath: String): Queue[Token] =
   val tokens = identify(dissolve(fromFile(filePath).getLines))
-  for (token <- tokens) {
-    if (token.data.isDefined) {
-      println("Type: %s, data: %s".format(token.t.toString(), token.data))
-    } else {
-      println("Type: %s".format(token.t.toString()))
-    }
-  }
+  // for (token <- tokens)
+  //   println("Type: %s, data: %s".format(token.t.toString(), token.data.getOrElse("Null")))
   return tokens
 
 val tokenMap = HashMap[String, TokenType](
@@ -31,7 +26,6 @@ val tokenMap = HashMap[String, TokenType](
   "while" -> TokenType.WHILE,
   "or" -> TokenType.OR,
   "and" -> TokenType.AND,
-  "let" -> TokenType.LET,
 )
 
 val oneCharTokenSet = Vector[Char](
@@ -66,10 +60,10 @@ def identify(chunks: Queue[String]): Queue[Token] =
     chunk match
       case builtin if tokenMap.contains(chunk) =>
         Token(tokenMap.get(builtin).get)
-      case identifier if chunk forall Character.isAlphabetic =>
-        Token(TokenType.NUMBER, Option(identifier))
+      case identifier if chunk forall Character.isAlphabetic =>  // bruh
+        Token(TokenType.IDENTIFIER, Option(identifier))
       case hexString =>
-        Token(TokenType.IDENTIFIER, Option(Integer.parseInt(hexString, 16)))
+        Token(TokenType.NUMBER, Option(Integer.parseInt(hexString, 16)))
   )
 
 enum TokenType {

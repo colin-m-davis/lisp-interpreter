@@ -1,1 +1,1 @@
-((let x 5) (add 2 x))  // returns 7
+add (add 1 2 3) 3 4 (add (add) 4 9 4)

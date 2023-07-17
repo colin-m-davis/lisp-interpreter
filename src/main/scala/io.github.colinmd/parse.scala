@@ -2,6 +2,7 @@ package io.github.colinmd
 
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.Queue
+import scala.collection.immutable.HashSet
 
 sealed trait Expr;
 case class Literal(data: String | Int) extends Expr
@@ -9,29 +10,44 @@ case class FnCall(fn: String, args: List[Expr]) extends Expr
 case class FnDef(fn: String, params: List[String]) extends Expr
 
 case class Environment(
-  functions: HashMap[String, (Tree, List[String])] = new HashMap[String, (Tree, List[String])],
+  functions: HashMap[String, (Tree, List[String])] = new HashMap[String, (Tree, List[String])](
+
+  ),
   numbers: HashMap[String, Int] = new HashMap[String, Int]
 )
+
+val builtInFns = List("add", "sub", "div", "mul")
+
+def evalBuiltInFn(fnName: String, args: List[Int]): Int =
+  println("evalBuiltInFn")
+  fnName match
+    case "add" => args.sum
+    case _ => throw new Exception("Nahhhh!")
 
 def eval(tree: Tree, env: Environment): Option[Expr] =
   // this function is too long
   tree match
     case Node(children) =>
       // TODO: add fn def and extract fn def/call to other functions
-      val (body: Tree, params: List[String]) = 
-        children.dequeue match
-          case LeafNode(token) =>
-            token.data match
-              case Some(contents: String) => env.functions.get(contents).get
-              case _ => throw new Exception("Wrongg!!!")
-          case _ => throw new Exception("wrong!!!")
+      val head = children.dequeue
+      println("Evaluating node with children size %s".formatted(children.size + 1))
       val args = children.toList.map(childTree =>
           eval(childTree, env).get match
-            case Literal(data: Int) => data
-            case _ => throw new Exception("Shit!")
+            case Literal(data: Int) =>
+              data
+            case x =>
+              println(x)
+              throw new Exception("Shit!")
       )
-      val innerEnv = Environment(env.functions, env.numbers ++ params.zip(args).toMap)
-      eval(body, innerEnv)
+      head match
+        case LeafNode(Token(_, Some(fnName: String))) =>
+          if builtInFns.contains(fnName) then Some(Literal(evalBuiltInFn(fnName, args)))
+          else None
+        case Node(children) =>
+          for (child <- children)
+            println(child)
+          throw new Exception("got NODE with children size %d".formatted(children.size))
+        case _ => throw new Exception("bad fn data")
     case LeafNode(token) =>
       Some(Literal(token.data.get))
 
