@@ -56,15 +56,28 @@ def dissolve(lines: Iterator[String]): Queue[String] =
   return chunks
 
 def identify(chunks: Queue[String]): Queue[Token] =
-  return chunks.map(chunk =>
+  chunks.map(chunk =>
     chunk match
       case builtin if tokenMap.contains(chunk) =>
         Token(tokenMap.get(builtin).get)
-      case identifier if chunk forall Character.isAlphabetic =>  // bruh
-        Token(TokenType.IDENTIFIER, Option(identifier))
-      case hexString =>
-        Token(TokenType.NUMBER, Option(Integer.parseInt(hexString, 16)))
+      case chunk => getLiteral(chunk)
   )
+
+def getLiteral(chunk: String): Token =
+  try
+    try
+      Token(TokenType.NUMBER, Option(Integer.parseInt(chunk, 10)))
+    catch NumberFormatException =>
+      if chunk.size <= 2 then throw new NumberFormatException
+      val base =
+        chunk.slice(0, 2) match
+          case "0x" => 16
+          case "0d" => 10
+          case "0b" => 2
+          case _ => throw new NumberFormatException
+      Token(TokenType.NUMBER, Option(Integer.parseInt(chunk.takeRight(chunk.size - 2), base)))
+  catch NumberFormatException =>
+    Token(TokenType.IDENTIFIER, Option(chunk))
 
 enum TokenType {
   case

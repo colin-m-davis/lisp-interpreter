@@ -16,12 +16,22 @@ case class Environment(
   numbers: HashMap[String, Int] = new HashMap[String, Int]
 )
 
-val builtInFns = List("add", "sub", "div", "mul")
+val builtInFns = List(
+  "add", "+",
+  "sub", "-",
+  "div", "/",
+  "mul", "*",
+  "mod", "%"
+)
 
 def evalBuiltInFn(fnName: String, args: List[Int]): Int =
   println("evalBuiltInFn")
   fnName match
-    case "add" => args.sum
+    case "add" | "+" => args.sum
+    case "sub" | "-" => args.reduce((accum, x) => accum - x)
+    case "mul" | "*" => args.reduce((accum, x) => accum * x)
+    case "div" | "/" => args.reduce((accum, x) => accum / x)
+    case "mod" | "%" => args.reduce((accum, x) => accum % x)
     case _ => throw new Exception("Nahhhh!")
 
 def eval(tree: Tree, env: Environment): Option[Expr] =
@@ -43,6 +53,7 @@ def eval(tree: Tree, env: Environment): Option[Expr] =
         case LeafNode(Token(_, Some(fnName: String))) =>
           if builtInFns.contains(fnName) then Some(Literal(evalBuiltInFn(fnName, args)))
           else None
+        case LeafNode(Token(_, Some(glorbular: Int))) => throw new Exception("caught a glorbular: %s".formatted(glorbular))
         case Node(children) =>
           for (child <- children)
             println(child)
