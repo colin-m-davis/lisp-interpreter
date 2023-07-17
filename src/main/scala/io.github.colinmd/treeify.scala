@@ -3,14 +3,13 @@ package io.github.colinmd
 import scala.collection.mutable.Queue
 import scala.collection.mutable.Stack
 
-
 // parse (treeify and verify)
 sealed trait Tree
 case class Node(children: Queue[Tree] = Queue[Tree]()) extends Tree
 case class LeafNode(token: Token) extends Tree
 
 // replace parens with tree structure
-def treeify(tokensQueue: Queue[Token]) =
+def treeify(tokensQueue: Queue[Token]): Tree =
   var stack = new Stack[Tree]
   stack.addOne(Node())
   for (token <- tokensQueue)
@@ -26,3 +25,4 @@ def treeify(tokensQueue: Queue[Token]) =
         stack.top match
           case Node(children) => children.addOne(LeafNode(token))
           case _ =>
+  return stack.top

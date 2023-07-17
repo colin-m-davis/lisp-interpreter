@@ -1,1 +1,1 @@
-((sub 4 9) (add (div 1 2) 3))
+((let x 5) (add 2 x))  // returns 7
